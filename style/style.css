@@ -1,0 +1,123 @@
+/* Базовые стили страницы */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f6fa;
+    display: flex;
+    justify-content: center;
+    padding-top: 50px;
+}
+
+/* Основной контейнер To-Do List */
+.todo-section {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    max-width: 90%;
+}
+
+/* Заголовок */
+.todo-section h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 26px;
+}
+
+/* Форма добавления задач */
+.todo-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.todo-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #dcdde1;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+}
+
+.todo-input:focus {
+    border-color: #4c8bf5;
+    box-shadow: 0 0 5px rgba(76, 139, 245, 0.4);
+}
+
+.todo-button {
+    padding: 10px 15px;
+    background-color: #4c8bf5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.todo-button:hover {
+    background-color: #b6ceff;
+}
+
+/* Список задач */
+.todo-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Элемент задачи */
+.task-item {
+    background-color: #f0f0f5;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.2s;
+}
+
+.task-item:hover {
+    background-color: #e6e6f0;
+}
+
+/* Текст задачи */
+.task-item span {
+    flex: 1;
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+/* Иконки */
+.icon-btn {
+    width: 22px;
+    height: 22px;
+    margin-left: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.icon-btn:hover {
+    transform: scale(1.2);
+}
+
+/* Кнопка сортировки */
+.todo-section button[type="button"] {
+    margin-bottom: 20px;
+    background-color: #e8e8e8;
+    color: rgb(51, 51, 51);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.todo-section button[type="button"]:hover {
+    background-color: #7d7d7d;
+}
