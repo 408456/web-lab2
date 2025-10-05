@@ -1,123 +1,239 @@
-/* Базовые стили страницы */
-body {
+/* === БАЗОВЫЕ СТИЛИ === */
+* {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f6fa;
+}
+
+body {
+    background: linear-gradient(135deg, #f0f4ff, #e4ebf9);
     display: flex;
     justify-content: center;
-    padding-top: 50px;
-}
-
-/* Основной контейнер To-Do List */
-.todo-section {
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-    width: 400px;
-    max-width: 90%;
-}
-
-/* Заголовок */
-.todo-section h1 {
-    text-align: center;
+    padding: 40px 20px;
+    min-height: 100vh;
     color: #333;
-    margin-bottom: 20px;
-    font-size: 26px;
+    transition: background 0.3s, color 0.3s;
 }
 
-/* Форма добавления задач */
-.todo-form {
+/* === ТЕМНАЯ ТЕМА === */
+body.dark-theme {
+    background: linear-gradient(135deg, #1e1e2f, #2a2a3d);
+    color: #f0f0f0;
+}
+
+body.dark-theme .todo-section {
+    background: #2a2a3d;
+    color: #f0f0f0;
+}
+
+body.dark-theme .task-item {
+    background: #3a3a4f;
+}
+
+body.dark-theme .task-item.done {
+    opacity: 0.6;
+}
+
+body.dark-theme .todo-input,
+body.dark-theme .todo-date,
+body.dark-theme .control-panel input,
+body.dark-theme .control-panel select {
+    background: #1e1e2f;
+    color: #f0f0f0;
+    border: 1px solid #555;
+}
+
+/* === КОНТЕЙНЕР === */
+.todo-section {
+    background: #fff;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 500px;
+    animation: fadeIn 0.5s ease;
+}
+
+/* === HEADER === */
+header {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: inherit;
+}
+.theme-toggle-icon {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.theme-toggle-icon:hover {
+    transform: scale(1.2);
+}
+
+/* === ПАНЕЛЬ УПРАВЛЕНИЯ === */
+.control-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 10px;
     margin-bottom: 20px;
 }
-
-.todo-input {
-    flex: 1;
-    padding: 10px 15px;
-    border: 1px solid #dcdde1;
+.control-panel input, 
+.control-panel select {
+    padding: 10px;
     border-radius: 8px;
-    font-size: 16px;
-    outline: none;
+    border: 1px solid #dce0f0;
+    font-size: 14px;
+    flex: 1;
+    transition: border 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
 }
-
-.todo-input:focus {
+.control-panel input:focus, 
+.control-panel select:focus {
     border-color: #4c8bf5;
     box-shadow: 0 0 5px rgba(76, 139, 245, 0.4);
 }
 
+/* === ФОРМА === */
+.todo-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.todo-input, .todo-date {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #dce0f0;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: background 0.3s, color 0.3s, border 0.3s;
+}
 .todo-button {
-    padding: 10px 15px;
-    background-color: #4c8bf5;
-    color: white;
+    padding: 12px 18px;
+    background: #4c8bf5;
+    color: #fff;
+    font-weight: 600;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
+    transition: background 0.25s, transform 0.1s;
 }
-
 .todo-button:hover {
-    background-color: #b6ceff;
+    background: #3a6cd6;
+    transform: translateY(-1px);
+}
+.todo-button:active {
+    transform: scale(0.95);
 }
 
-/* Список задач */
+/* === СПИСОК === */
 .todo-list {
     list-style: none;
-    padding: 0;
-    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-/* Элемент задачи */
 .task-item {
-    background-color: #f0f0f5;
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    border-radius: 8px;
+    background: #f8f9ff;
+    padding: 14px 16px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: background-color 0.2s;
+    transition: transform 0.3s ease, opacity 0.3s ease, background 0.3s;
+    position: relative;
 }
-
+.task-item.done {
+    opacity: 0.6;
+}
 .task-item:hover {
-    background-color: #e6e6f0;
+    transform: translateY(-2px);
 }
 
-/* Текст задачи */
+/* Текст */
 .task-item span {
     flex: 1;
     margin-right: 10px;
-    font-size: 16px;
+    font-size: 15px;
+    font-weight: 500;
+    word-break: break-word;
+}
+
+/* Инлайн редактирование */
+.task-edit-input, .task-edit-date {
+    padding: 5px 8px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
 }
 
 /* Иконки */
 .icon-btn {
     width: 22px;
     height: 22px;
-    margin-left: 6px;
+    margin-left: 8px;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.2s, filter 0.2s;
 }
-
 .icon-btn:hover {
     transform: scale(1.2);
+    filter: brightness(1.2);
 }
 
-/* Кнопка сортировки */
-.todo-section button[type="button"] {
-    margin-bottom: 20px;
-    background-color: #e8e8e8;
-    color: rgb(51, 51, 51);
-    border: none;
-    padding: 8px 12px;
+/* === АНИМАЦИИ === */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+    from { opacity:1; transform: translateY(0); }
+    to { opacity:0; transform: translateY(-10px); }
+}
+.task-item.fade-in { animation: fadeIn 0.4s forwards; }
+.task-item.fade-out { animation: fadeOut 0.3s forwards; }
+
+/* === ИЗБРАННЫЕ ЗАДАЧИ === */
+.task-item.favourite {
+    background-color: #ffd52c;
+}
+
+/* === КНОПКИ НА ДОП. СТРАНИЦАХ === */
+.todo-section button {
+    margin-top: 10px;
+    padding: 10px 14px;
     border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    background: #f0f1f7;
     cursor: pointer;
-    font-weight: bold;
+    transition: background 0.2s;
+}
+.todo-section button:hover {
+    background: #dcdff0;
+}
+.done-task { filter: blur(2px); opacity: 0.6; }
+.fav-btn { filter: brightness(1); }
+.fav-btn[src*="favourite.png"] { filter: brightness(1.5); }
+.todo-button { background-color: #5085ff; color: #fff; }
+
+
+/* === АДАПТИВ === */
+@media (max-width: 600px) {
+    .todo-section {
+        width: 100%;
+        padding: 20px;
+    }
+    .todo-form { flex-direction: column; }
+    .todo-button { width: 100%; }
+    .control-panel { flex-direction: column; }
+    .control-panel input, .control-panel select { width: 100%; }
 }
 
-.todo-section button[type="button"]:hover {
-    background-color: #7d7d7d;
-}
