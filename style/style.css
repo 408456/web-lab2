@@ -1,8 +1,7 @@
-/* === БАЗОВЫЕ СТИЛИ === */
 * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -13,127 +12,96 @@ body {
     padding: 40px 20px;
     min-height: 100vh;
     color: #333;
-    transition: background 0.3s, color 0.3s;
+    transition: background 0.25s, color 0.25s;
 }
 
-/* === ТЕМНАЯ ТЕМА === */
-body.dark-theme {
-    background: linear-gradient(135deg, #1e1e2f, #2a2a3d);
-    color: #f0f0f0;
-}
 
-body.dark-theme .todo-section {
-    background: #2a2a3d;
-    color: #f0f0f0;
-}
 
-body.dark-theme .task-item {
-    background: #3a3a4f;
-}
-
-body.dark-theme .task-item.done {
-    opacity: 0.6;
-}
-
-body.dark-theme .todo-input,
-body.dark-theme .todo-date,
-body.dark-theme .control-panel input,
-body.dark-theme .control-panel select {
-    background: #1e1e2f;
-    color: #f0f0f0;
-    border: 1px solid #555;
-}
-
-/* === КОНТЕЙНЕР === */
 .todo-section {
     background: #fff;
     padding: 25px;
     border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     width: 100%;
-    max-width: 500px;
-    animation: fadeIn 0.5s ease;
+    max-width: 540px;
+    animation: fadeIn 0.4s ease;
 }
 
-/* === HEADER === */
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
+
 header h1 {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
-    color: inherit;
 }
+
 .theme-toggle-icon {
     width: 32px;
     height: 32px;
     cursor: pointer;
-    transition: transform 0.2s;
-}
-.theme-toggle-icon:hover {
-    transform: scale(1.2);
+    transition: transform .15s;
 }
 
-/* === ПАНЕЛЬ УПРАВЛЕНИЯ === */
+.theme-toggle-icon:hover {
+    transform: scale(1.15);
+}
+
 .control-panel {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
+    align-items: center;
 }
-.control-panel input, 
+
+.control-panel input,
 .control-panel select {
     padding: 10px;
     border-radius: 8px;
     border: 1px solid #dce0f0;
-    font-size: 14px;
     flex: 1;
-    transition: border 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
-}
-.control-panel input:focus, 
-.control-panel select:focus {
-    border-color: #4c8bf5;
-    box-shadow: 0 0 5px rgba(76, 139, 245, 0.4);
 }
 
-/* === ФОРМА === */
+.control-panel input:focus,
+.control-panel select:focus {
+    outline: none;
+    box-shadow: 0 0 6px rgba(76, 139, 245, 0.2);
+}
+
 .todo-form {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     flex-wrap: wrap;
 }
-.todo-input, .todo-date {
+
+.todo-input,
+.todo-date {
     flex: 1;
     padding: 12px;
-    border: 1px solid #dce0f0;
     border-radius: 8px;
-    font-size: 15px;
-    transition: background 0.3s, color 0.3s, border 0.3s;
+    border: 1px solid #dce0f0;
 }
+
 .todo-button {
-    padding: 12px 18px;
-    background: #4c8bf5;
+    padding: 12px 16px;
+    background: #5085ff;
     color: #fff;
-    font-weight: 600;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: background 0.25s, transform 0.1s;
+    font-weight: 600;
 }
+
 .todo-button:hover {
     background: #3a6cd6;
     transform: translateY(-1px);
 }
-.todo-button:active {
-    transform: scale(0.95);
-}
 
-/* === СПИСОК === */
+
 .todo-list {
     list-style: none;
     display: flex;
@@ -148,18 +116,26 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: transform 0.3s ease, opacity 0.3s ease, background 0.3s;
+    gap: 10px;
+    transition: transform .18s ease, opacity .18s ease, filter .18s ease;
     position: relative;
 }
-.task-item.done {
-    opacity: 0.6;
-}
+
 .task-item:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
 }
 
-/* Текст */
-.task-item span {
+
+.task-item.done {
+    opacity: 0.6;
+    filter: blur(1px);
+}
+
+.task-item.favourite {
+    background-color: #ffd52c;
+}
+
+.task-text {
     flex: 1;
     margin-right: 10px;
     font-size: 15px;
@@ -167,73 +143,28 @@ header h1 {
     word-break: break-word;
 }
 
-/* Инлайн редактирование */
-.task-edit-input, .task-edit-date {
-    padding: 5px 8px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
-
-/* Иконки */
 .icon-btn {
     width: 22px;
     height: 22px;
+    cursor: pointer;
     margin-left: 8px;
-    cursor: pointer;
-    transition: transform 0.2s, filter 0.2s;
+    transition: transform .12s;
 }
+
 .icon-btn:hover {
-    transform: scale(1.2);
-    filter: brightness(1.2);
+    transform: scale(1.15);
 }
 
-/* === АНИМАЦИИ === */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeOut {
-    from { opacity:1; transform: translateY(0); }
-    to { opacity:0; transform: translateY(-10px); }
-}
-.task-item.fade-in { animation: fadeIn 0.4s forwards; }
-.task-item.fade-out { animation: fadeOut 0.3s forwards; }
-
-/* === ИЗБРАННЫЕ ЗАДАЧИ === */
-.task-item.favourite {
-    background-color: #ffd52c;
+.inline-edit-wrapper {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-left: 8px;
 }
 
-/* === КНОПКИ НА ДОП. СТРАНИЦАХ === */
-.todo-section button {
-    margin-top: 10px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-    background: #f0f1f7;
-    cursor: pointer;
-    transition: background 0.2s;
+.task-edit-input,
+.task-edit-date {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
 }
-.todo-section button:hover {
-    background: #dcdff0;
-}
-.done-task { filter: blur(2px); opacity: 0.6; }
-.fav-btn { filter: brightness(1); }
-.fav-btn[src*="favourite.png"] { filter: brightness(1.5); }
-.todo-button { background-color: #5085ff; color: #fff; }
-
-
-/* === АДАПТИВ === */
-@media (max-width: 600px) {
-    .todo-section {
-        width: 100%;
-        padding: 20px;
-    }
-    .todo-form { flex-direction: column; }
-    .todo-button { width: 100%; }
-    .control-panel { flex-direction: column; }
-    .control-panel input, .control-panel select { width: 100%; }
-}
-

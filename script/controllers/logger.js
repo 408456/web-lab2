@@ -1,6 +1,6 @@
 export class EventLogger {
-    static log(eventType, data = {}) {
-        const timestamp = new Date().toISOString();
-        console.log(`[${timestamp}] [${eventType}]`, data);
-    }
+  static log(type, data = {}) {
+    const ts = new Date().toISOString();
+    console.log(`[${ts}] [${type}]`, data);
+  }
 }

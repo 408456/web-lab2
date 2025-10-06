@@ -1,6 +1,6 @@
-import { TaskStorage } from '../model/taskStorage.js';
+// Центральный контроллер приложения
 import { TaskModel } from '../model/taskModel.js';
-import { TaskController } from './taskController.js';
+import { TaskStorage } from '../model/taskStorage.js';
 import { AppView } from '../view/appView.js';
 import { debounce } from '../utils/debounce.js';
 import { isValidDeadline } from '../utils/deadLine.js';
@@ -8,28 +8,67 @@ import { EventLogger } from './logger.js';
 
 export class AppController {
     constructor(root = document.body) {
-        this.storage = new TaskStorage();
-        this.view = new AppView();
-        this.tasks = [];
-        this.taskControllers = [];
         this.root = root;
-
-        this.saveAllDebounced = debounce(() => this.storage.saveAll(this.tasks), 400);
+        this.view = new AppView();
+        this.storage = new TaskStorage();
+        this.tasks = [];
+        this.saveDebounced = debounce(() => this.storage.saveAll(this.tasks), 500); // пакетное сохранение
+        this.autoBackupInterval = null;
+        this.state = {
+            search: '',
+            filter: 'all',
+            sort: 'date'
+        };
     }
 
     init() {
         this.view.mount(this.root);
         this.tasks = this.storage.loadAll();
-        EventLogger.log('AppLoaded', { tasksCount: this.tasks.length });
+        EventLogger.log('AppLoaded', { count: this.tasks.length });
 
-        this.renderTasks();
+        this._renderListInitial();
 
         this._wireForm();
         this._wireControls();
+        this._wireListDelegation();
         this._wireDragAndDrop();
 
-
+        // Автосохранение раз в 10s 
+        this.autoBackupInterval = setInterval(() => this.storage.saveAll(this.tasks), 10000);
         window.addEventListener('beforeunload', () => this.storage.saveAll(this.tasks));
+    }
+
+    _renderListInitial() {
+        const list = this._getProcessedTasks();
+        this.view.listView.render(list);
+    }
+
+    _getProcessedTasks() {
+        let arr = this.tasks.slice();
+
+
+        if (this.state.filter === 'done') arr = arr.filter(t => t.done);
+        else if (this.state.filter === 'favourite') arr = arr.filter(t => t.favourite);
+
+        const q = (this.state.search || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (q) {
+            arr = arr.filter(t => t.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(q));
+        }
+
+        if (this.state.sort === 'date') {
+            arr.sort((a, b) => b.created - a.created);
+        } else if (this.state.sort === 'done') {
+            arr.sort((a, b) => (a.done === b.done) ? 0 : (a.done ? 1 : -1));
+        } else if (this.state.sort === 'deadline') {
+            arr.sort((a, b) => {
+                if (!a.deadline && !b.deadline) return 0;
+                if (!a.deadline) return 1;
+                if (!b.deadline) return -1;
+                return a.deadline.localeCompare(b.deadline);
+            });
+        }
+
+        return arr;
     }
 
     _wireForm() {
@@ -44,32 +83,32 @@ export class AppController {
             }
             const task = new TaskModel({ text, deadline });
             this.tasks.push(task);
-            this.addTaskController(task);
 
-            this.saveAllDebounced();
-            this.view.input.value = '';
-            this.view.dateInput.value = '';
-
-            EventLogger.log('TaskAdded', { id: task.id, text: task.text, deadline: task.deadline });
+            this.view.listView.appendTask(task);
+            this.saveDebounced();
+            this.view.clearForm();
+            EventLogger.log('TaskAdded', { id: task.id });
         });
     }
 
     _wireControls() {
+
         this.view.searchInput.addEventListener('input', e => {
-            this.currentSearch = e.target.value;
-            EventLogger.log('Search', { query: this.currentSearch });
-            this.renderTasks();
+            this.state.search = e.target.value;
+            this._refreshListPartial();
+            EventLogger.log('Search', { q: this.state.search });
         });
 
         this.view.sortSelect.addEventListener('change', e => {
-            EventLogger.log('SortChanged', { criteria: e.target.value });
-            this.renderTasks();
+            this.state.sort = e.target.value;
+            this._refreshListPartial();
+            EventLogger.log('SortChanged', { sort: this.state.sort });
         });
 
         this.view.filterSelect.addEventListener('change', e => {
-            this.currentFilter = e.target.value;
-            EventLogger.log('FilterChanged', { filter: this.currentFilter });
-            this.renderTasks();
+            this.state.filter = e.target.value;
+            this._refreshListPartial();
+            EventLogger.log('FilterChanged', { filter: this.state.filter });
         });
 
         this.view.themeToggleIcon.addEventListener('click', () => {
@@ -80,94 +119,162 @@ export class AppController {
         });
     }
 
-    addTaskController(task) {
-        const tc = new TaskController(task, this.view.listEl, (task, deletedTask = null) => {
-            if (deletedTask) {
-                this.tasks = this.tasks.filter(t => t.id !== deletedTask.id);
-            } else {
-                const idx = this.tasks.findIndex(t => t.id === task.id);
-                if (idx > -1) this.tasks[idx] = task;
+    _wireListDelegation() {
+        const listEl = this.view.listEl;
+
+        listEl.addEventListener('click', e => {
+            const btn = e.target.closest('.icon-btn');
+            const itemEl = e.target.closest('.task-item');
+            if (!itemEl) return;
+            const id = itemEl.dataset.id;
+            const task = this.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            if (btn && btn.classList.contains('done-btn')) {
+                this._toggleDone(task, itemEl);
+                return;
             }
-            this.saveAllDebounced();
-            this.renderTasks();
-        }, this);
-        this.taskControllers.push(tc);
-    }
-
-    renderTasks() {
-        // Очистка списка
-        this.view.listEl.innerHTML = '';
-        this.taskControllers = [];
-
-        // Фильтры и поиск
-        let filtered = this.tasks.slice();
-
-        if (this.currentFilter === 'done') filtered = filtered.filter(t => t.done);
-        else if (this.currentFilter === 'favourite') filtered = filtered.filter(t => t.favourite);
-
-        const search = (this.currentSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        filtered = filtered.filter(t => t.text.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(search));
-
-        filtered.forEach(task => this.addTaskController(task));
-
-        this.moveDoneToEnd();
-    }
-
-    moveDoneToEnd() {
-        const list = this.view.listEl;
-        const doneItems = [];
-        const notDoneItems = [];
-
-        this.taskControllers.forEach(tc => {
-            if (tc.task.done) doneItems.push(tc.view.element);
-            else notDoneItems.push(tc.view.element);
+            if (btn && btn.classList.contains('fav-btn')) {
+                this._toggleFav(task, itemEl);
+                return;
+            }
+            if (btn && btn.classList.contains('delete-btn')) {
+                this._removeTask(task, itemEl);
+                return;
+            }
+            if (btn && btn.classList.contains('edit-btn')) {
+                this._startInlineEdit(task, itemEl);
+                return;
+            }
         });
 
-        const allItems = [...notDoneItems, ...doneItems];
-
-        // Плавная анимация
-        allItems.forEach(el => {
-            el.style.transition = 'transform 0.3s';
+        listEl.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                const editWrapper = e.target.closest('.inline-edit-wrapper');
+                if (editWrapper) this.view.listView.cancelInlineEdit(editWrapper);
+            }
         });
-
-        allItems.forEach(el => list.appendChild(el));
     }
 
     _wireDragAndDrop() {
         const list = this.view.listEl;
-        let draggedEl = null;
+        let draggingEl = null;
 
         list.addEventListener('dragstart', e => {
-            draggedEl = e.target;
+            const el = e.target.closest('.task-item');
+            if (!el) return;
+            draggingEl = el;
+            el.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
-            draggedEl.classList.add('dragging');
-            EventLogger.log('DragStart', { id: draggedEl.dataset.id });
-        });
-
-        list.addEventListener('dragend', e => {
-            if (draggedEl) draggedEl.classList.remove('dragging');
-            draggedEl = null;
-            this.saveAllDebounced();
-            EventLogger.log('DragEnd', {});
+            EventLogger.log('DragStart', { id: el.dataset.id });
         });
 
         list.addEventListener('dragover', e => {
             e.preventDefault();
-            const afterEl = this._getDragAfterElement(list, e.clientY);
+            const after = this._getDragAfterElement(list, e.clientY);
             window.requestAnimationFrame(() => {
-                if (afterEl == null) list.appendChild(draggedEl);
-                else list.insertBefore(draggedEl, afterEl);
+                if (!draggingEl) return;
+                if (after == null) list.appendChild(draggingEl);
+                else list.insertBefore(draggingEl, after);
             });
+        });
+
+        list.addEventListener('dragend', () => {
+            if (draggingEl) draggingEl.classList.remove('dragging');
+            
+            const ids = [...list.children].map(ch => ch.dataset.id);
+            this.tasks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+            this.saveDebounced();
+            draggingEl = null;
+            EventLogger.log('DragEnd', {});
         });
     }
 
     _getDragAfterElement(container, y) {
-        const draggableEls = [...container.querySelectorAll('.task-item:not(.dragging)')];
-        return draggableEls.reduce((closest, child) => {
+        const draggable = [...container.querySelectorAll('.task-item:not(.dragging)')];
+        return draggable.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = y - box.top - box.height / 2;
             if (offset < 0 && offset > closest.offset) return { offset, element: child };
             return closest;
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }, { offset: Number.NEGATIVE_INFINITY }).element || null;
+    }
+
+    _toggleDone(task, itemEl) {
+        task.done = !task.done;
+        this.view.listView.updateTaskElement(task, itemEl);
+        this.saveDebounced();
+        this._ensureDoneAtEnd(itemEl, task.done);
+        EventLogger.log('TaskToggledDone', { id: task.id, done: task.done });
+    }
+
+    _ensureDoneAtEnd(itemEl, isDone) {
+        if (isDone) this.view.listEl.appendChild(itemEl);
+        else {
+            const firstDone = this.view.listEl.querySelector('.task-item.done');
+            if (firstDone) this.view.listEl.insertBefore(itemEl, firstDone);
+            else this.view.listEl.insertBefore(itemEl, this.view.listEl.firstChild);
+        }
+    }
+
+    _toggleFav(task, itemEl) {
+        task.favourite = !task.favourite;
+        this.view.listView.updateTaskElement(task, itemEl);
+        this.saveDebounced();
+        EventLogger.log('TaskToggledFavourite', { id: task.id, fav: task.favourite });
+    }
+
+    _removeTask(task, itemEl) {
+        this.tasks = this.tasks.filter(t => t.id !== task.id);
+        this.view.listView.removeTaskElement(itemEl);
+        this.saveDebounced();
+        EventLogger.log('TaskDeleted', { id: task.id });
+    }
+
+    _startInlineEdit(task, itemEl) {
+        if (itemEl.querySelector('.inline-edit-wrapper')) return;
+        const wrapper = this.view.listView.startInlineEdit(task, itemEl);
+
+        const textInput = wrapper.querySelector('.task-edit-input');
+        const dateInput = wrapper.querySelector('.task-edit-date');
+
+        const save = () => {
+            const newText = textInput.value.trim();
+            const newDeadline = dateInput.value || null;
+            if (!newText) { 
+                this.view.listView.cancelInlineEdit(wrapper);
+                return;
+            }
+            if (newDeadline && !isValidDeadline(newDeadline)) {
+                alert('Дата срока не может быть раньше сегодняшней');
+                return;
+            }
+            task.text = newText;
+            task.deadline = newDeadline;
+            this.view.listView.finishInlineEdit(task, itemEl, wrapper);
+            this.saveDebounced();
+            EventLogger.log('TaskEdited', { id: task.id });
+        };
+
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') this.view.listView.cancelInlineEdit(wrapper);
+        });
+        dateInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') this.view.listView.cancelInlineEdit(wrapper);
+        });
+
+        textInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (!dateInput.matches(':focus')) save();
+            }, 150);
+        });
+        dateInput.addEventListener('blur', () => setTimeout(save, 0));
+    }
+
+    _refreshListPartial() {
+        const processed = this._getProcessedTasks();
+        this.view.listView.render(processed);
     }
 }

@@ -1,0 +1,13 @@
+body.dark-theme {
+    background: linear-gradient(135deg, #1e1e2f, #2a2a3d);
+    color: #f0f0f0;
+}
+
+body.dark-theme .todo-section {
+    background: #2a2a3d;
+    color: #f0f0f0;
+}
+
+body.dark-theme .task-item {
+    background: #3a3a4f;
+}
