@@ -127,8 +127,8 @@ header h1 {
 
 
 .task-item.done {
-    opacity: 0.6;
-    filter: blur(1px);
+    opacity: 1;
+    filter: blur(2px);
 }
 
 .task-item.favourite {

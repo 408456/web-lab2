@@ -10,7 +10,6 @@ export class TaskController {
         this.parentApp = parentApp;
         this.saveCallback = saveCallback;
 
-        // Монтируем представление и навешиваем события
         this.view.mount(this.parent);
         this._bindEvents();
 
@@ -21,7 +20,6 @@ export class TaskController {
         const el = this.view.element;
         if (!el) return;
 
-        // Делегируем клики по кнопкам
         el.addEventListener('click', (e) => {
             const btn = e.target;
             if (btn.classList.contains('done-btn')) this.toggleDone();
@@ -30,16 +28,13 @@ export class TaskController {
             else if (btn.classList.contains('delete-btn')) this.remove();
         });
 
-        // Поддержка drag attributes (id в dataset уже выставлен)
     }
 
     toggleDone() {
         this.task.done = !this.task.done;
         this.view.update();
-        // notify app через callback (сохранение/обновление)
         this.saveCallback(this.task);
 
-        // Переместить выполненные вниз
         if (this.parentApp && typeof this.parentApp.moveDoneToEnd === 'function') {
             this.parentApp.moveDoneToEnd();
         }
@@ -59,7 +54,6 @@ export class TaskController {
         const span = li.querySelector('span.task-text');
         if (!span) return;
 
-        // Скрываем основной текст
         span.style.display = 'none';
         const oldText = this.task.text;
         const oldDeadline = this.task.deadline || '';
@@ -77,7 +71,6 @@ export class TaskController {
         const dateInput = document.createElement('input');
         dateInput.type = 'date';
         dateInput.className = 'task-edit-date';
-        // FIX: если oldDeadline не в формате YYYY-MM-DD — попытаться извлечь
         if (oldDeadline && /^\d{4}-\d{2}-\d{2}$/.test(oldDeadline)) {
             dateInput.value = oldDeadline;
         } else if (oldDeadline) {
@@ -99,11 +92,9 @@ export class TaskController {
     attachListeners(container, textInput, dateInput, span, oldText, oldDeadline) {
         const saveHandler = () => this.saveChanges(textInput.value.trim(), dateInput.value || null, oldText, oldDeadline, container, span);
 
-        // Остановка всплытия, чтобы не триггерить клики родителя
         container.addEventListener('click', e => e.stopPropagation());
 
-        // Blur и клавиши
-        textInput.addEventListener('blur', saveHandler);
+       textInput.addEventListener('blur', saveHandler);
         dateInput.addEventListener('blur', saveHandler);
 
         textInput.addEventListener('keydown', (e) => {
@@ -124,7 +115,6 @@ export class TaskController {
 
     saveChanges(newText, newDeadline, oldText, oldDeadline, container, span) {
         if (!newText) {
-            // если текст пуст — отменяем изменение (не удаляем задачу)
             this.removeInputs(container, span);
             return;
         }
@@ -133,23 +123,18 @@ export class TaskController {
             return;
         }
 
-        // Обновляем модель
         this.task.text = newText;
         this.task.deadline = newDeadline;
 
-        // Удаляем инпуты и обновляем view
         this.removeInputs(container, span);
 
-        // Сигнализируем приложению о сохранении
         this.saveCallback(this.task);
 
         EventLogger.log('TaskEdited', { id: this.task.id, oldText, newText, oldDeadline, newDeadline });
     }
 
     remove() {
-        // Удаляем визуально
         this.view.remove();
-        // Сообщаем app, что объект удалён (через второй аргумент)
         this.saveCallback(null, this.task);
         EventLogger.log('TaskDeleted', { id: this.task.id, text: this.task.text });
     }

@@ -1,4 +1,3 @@
-// Центральный контроллер приложения
 import { TaskModel } from '../model/taskModel.js';
 import { TaskStorage } from '../model/taskStorage.js';
 import { AppView } from '../view/appView.js';
@@ -26,7 +25,7 @@ export class AppController {
         this.tasks = this.storage.loadAll();
         EventLogger.log('AppLoaded', { count: this.tasks.length });
 
-        this._renderListInitial();
+        this.renderListInitial();
 
         this._wireForm();
         this._wireControls();
@@ -38,7 +37,7 @@ export class AppController {
         window.addEventListener('beforeunload', () => this.storage.saveAll(this.tasks));
     }
 
-    _renderListInitial() {
+    renderListInitial() {
         const list = this._getProcessedTasks();
         this.view.listView.render(list);
     }
@@ -78,7 +77,7 @@ export class AppController {
             const deadline = this.view.dateInput.value || null;
             if (!text) return;
             if (deadline && !isValidDeadline(deadline)) {
-                alert('Дата срока не может быть раньше сегодняшней');
+                // alert('Дата срока не может быть раньше сегодняшней');
                 return;
             }
             const task = new TaskModel({ text, deadline });
@@ -156,50 +155,6 @@ export class AppController {
         });
     }
 
-    _wireDragAndDrop() {
-        const list = this.view.listEl;
-        let draggingEl = null;
-
-        list.addEventListener('dragstart', e => {
-            const el = e.target.closest('.task-item');
-            if (!el) return;
-            draggingEl = el;
-            el.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            EventLogger.log('DragStart', { id: el.dataset.id });
-        });
-
-        list.addEventListener('dragover', e => {
-            e.preventDefault();
-            const after = this._getDragAfterElement(list, e.clientY);
-            window.requestAnimationFrame(() => {
-                if (!draggingEl) return;
-                if (after == null) list.appendChild(draggingEl);
-                else list.insertBefore(draggingEl, after);
-            });
-        });
-
-        list.addEventListener('dragend', () => {
-            if (draggingEl) draggingEl.classList.remove('dragging');
-            
-            const ids = [...list.children].map(ch => ch.dataset.id);
-            this.tasks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-            this.saveDebounced();
-            draggingEl = null;
-            EventLogger.log('DragEnd', {});
-        });
-    }
-
-    _getDragAfterElement(container, y) {
-        const draggable = [...container.querySelectorAll('.task-item:not(.dragging)')];
-        return draggable.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) return { offset, element: child };
-            return closest;
-        }, { offset: Number.NEGATIVE_INFINITY }).element || null;
-    }
-
     _toggleDone(task, itemEl) {
         task.done = !task.done;
         this.view.listView.updateTaskElement(task, itemEl);
@@ -233,43 +188,61 @@ export class AppController {
 
     _startInlineEdit(task, itemEl) {
         if (itemEl.querySelector('.inline-edit-wrapper')) return;
-        const wrapper = this.view.listView.startInlineEdit(task, itemEl);
 
-        const textInput = wrapper.querySelector('.task-edit-input');
-        const dateInput = wrapper.querySelector('.task-edit-date');
+        const { wrapper, textInput, dateInput } = this.view.listView.startInlineEdit(task, itemEl);
+        this._setupInlineEditHandlers(task, itemEl, wrapper, textInput, dateInput);
+    }
 
-        const save = () => {
-            const newText = textInput.value.trim();
-            const newDeadline = dateInput.value || null;
-            if (!newText) { 
-                this.view.listView.cancelInlineEdit(wrapper);
-                return;
-            }
-            if (newDeadline && !isValidDeadline(newDeadline)) {
-                alert('Дата срока не может быть раньше сегодняшней');
-                return;
-            }
-            task.text = newText;
-            task.deadline = newDeadline;
-            this.view.listView.finishInlineEdit(task, itemEl, wrapper);
-            this.saveDebounced();
-            EventLogger.log('TaskEdited', { id: task.id });
+    _setupInlineEditHandlers(task, itemEl, wrapper, textInput, dateInput) {
+        const save = () => this._saveInlineEdit(task, itemEl, wrapper, textInput, dateInput);
+        const cancel = () => this.view.listView.cancelInlineEdit(wrapper);
+
+        this._addKeydownHandlers(textInput, dateInput, save, cancel);
+        this._addBlurHandlers(textInput, dateInput, save);
+    }
+
+    _saveInlineEdit(task, itemEl, wrapper, textInput, dateInput) {
+        const newText = textInput.value.trim();
+        const newDeadline = dateInput.value || null;
+
+        if (!this._validateInlineEdit(newText, newDeadline, textInput, dateInput)) return;
+
+        task.text = newText;
+        task.deadline = newDeadline;
+        this.view.listView.finishInlineEdit(task, itemEl, wrapper);
+        this.saveDebounced();
+        EventLogger.log('TaskEdited', { id: task.id });
+    }
+
+    _validateInlineEdit(newText, newDeadline, textInput, dateInput) {
+        if (!newText) {
+            this.view.listView.cancelInlineEdit(wrapper);
+            return false;
+        }
+
+        if (newDeadline && !isValidDeadline(newDeadline)) {
+            this.showErrorFeedback(dateInput, 'Дата срока не может быть раньше сегодняшней');
+            return false;
+        }
+
+        return true;
+    }
+
+    _addKeydownHandlers(textInput, dateInput, save, cancel) {
+        const handleKeydown = (e) => {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') cancel();
         };
 
-        textInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') save();
-            if (e.key === 'Escape') this.view.listView.cancelInlineEdit(wrapper);
-        });
-        dateInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') save();
-            if (e.key === 'Escape') this.view.listView.cancelInlineEdit(wrapper);
+        textInput.addEventListener('keydown', handleKeydown);
+        dateInput.addEventListener('keydown', handleKeydown);
+    }
+
+    _addBlurHandlers(textInput, dateInput, save) {
+        textInput.addEventListener('blur', () => {
+            setTimeout(() => !dateInput.matches(':focus') && save(), 150);
         });
 
-        textInput.addEventListener('blur', () => {
-            setTimeout(() => {
-                if (!dateInput.matches(':focus')) save();
-            }, 150);
-        });
         dateInput.addEventListener('blur', () => setTimeout(save, 0));
     }
 
@@ -277,4 +250,64 @@ export class AppController {
         const processed = this._getProcessedTasks();
         this.view.listView.render(processed);
     }
+
+    _wireDragAndDrop() {
+        const list = this.view.listEl;
+        let draggingEl = null;
+
+        list.addEventListener('dragstart', e => {
+            const el = e.target.closest('.task-item');
+            if (!el) return;
+            draggingEl = el;
+            el.classList.add('dragging');
+
+            try {
+                e.dataTransfer.setData('text/plain', el.dataset.id || '');
+                e.dataTransfer.effectAllowed = 'move';
+            } catch (err) {
+            }
+
+            EventLogger.log('DragStart', { id: el.dataset.id });
+        });
+
+        list.addEventListener('dragover', e => {
+            e.preventDefault(); 
+            const after = this._getDragAfterElement(list, e.clientY);
+            window.requestAnimationFrame(() => {
+                if (!draggingEl) return;
+                if (after == null) list.appendChild(draggingEl);
+                else list.insertBefore(draggingEl, after);
+            });
+        });
+
+        list.addEventListener('dragend', () => {
+            if (draggingEl) draggingEl.classList.remove('dragging');
+
+            const ids = [...list.children].map(ch => ch.dataset.id);
+
+            const pos = {};
+            ids.forEach((id, i) => pos[id] = i);
+
+            this.tasks.sort((a, b) => (pos[a.id] ?? 0) - (pos[b.id] ?? 0));
+
+            if (this.storage && typeof this.storage.saveAll === 'function') {
+                this.storage.saveAll(this.tasks);
+            } else {
+                this.saveDebounced();
+            }
+
+            draggingEl = null;
+            EventLogger.log('DragEnd', {});
+        });
+    }
+    _getDragAfterElement(container, y) {
+        const draggable = [...container.querySelectorAll('.task-item:not(.dragging)')];
+        return draggable.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) return { offset, element: child };
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element || null;
+    }
+
 }
