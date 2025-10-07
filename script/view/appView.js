@@ -19,10 +19,12 @@ export class AppView {
     
     const title = document.createElement('h1');
     title.textContent = 'To-Do List';
+    const name = document.createElement('h3');
+    name.textContent = 'Гольцман Глеб 408456 WEB 3.4';
     
     this.themeToggleIcon = this.createThemeToggleIcon();
     
-    this.header.append(title, this.themeToggleIcon);
+    this.header.append(title, name, this.themeToggleIcon);
   }
 
   createThemeToggleIcon() {
