@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     './img/icons/nodone.png',
     './img/icons/star.png',
     './img/icons/favourite.png',
+    './img/icons/favicon.png',
     './img/icons/edit.png',
     './img/icons/backet.png',
     './img/light.png',
